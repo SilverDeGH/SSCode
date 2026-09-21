@@ -1,0 +1,18 @@
+{
+  "name": "sscode-server",
+  "version": "0.2.4",
+  "description": "SScode companion service: remote AI coding workspace server (runs on user's Linux server, loopback only)",
+  "type": "module",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "start": "node src/index.ts",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}

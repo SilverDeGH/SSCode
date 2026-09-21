@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 终端 -->
+    <string name="terminal_title">终端</string>
+    <string name="terminal_connecting">连接中…</string>
+    <string name="terminal_connected">已连接（%1$s）</string>
+    <string name="terminal_disconnected">已断开</string>
+    <string name="terminal_backend_limited">后端 %1$s：不支持 vim 等全屏交互程序；服务进程存活期间重连可回放历史，服务重启后会话丢失。</string>
+    <string name="terminal_reconnect_hint">连接已断开，服务器上的会话仍然保留。</string>
+    <string name="terminal_reconnect">重连</string>
+    <string name="terminal_input_hint">输入...</string>
+    <string name="terminal_paste">粘贴</string>
+    <string name="terminal_font_smaller">A-</string>
+    <string name="terminal_font_larger">A+</string>
+
+    <!-- Git -->
+    <string name="git_title">Git</string>
+    <string name="git_branch_label">分支：%1$s</string>
+    <string name="git_ahead_behind">领先 %1$d · 落后 %2$d</string>
+    <string name="git_new_branch">新建分支</string>
+    <string name="git_switch_branch">切换分支</string>
+    <string name="git_branch_name_hint">分支名</string>
+    <string name="git_branch_done">完成</string>
+    <string name="git_no_changes">没有改动，工作区干净</string>
+    <string name="git_stage">暂存</string>
+    <string name="git_unstage">取消暂存</string>
+    <string name="git_commit_hint">提交信息…</string>
+    <string name="git_commit">提交</string>
+    <string name="git_commit_done">已提交</string>
+    <string name="git_commit_identity_error">未配置 Git 身份。请在服务器终端执行：git config --global user.name / user.email</string>
+    <string name="git_pull">拉取</string>
+    <string name="git_push">推送</string>
+    <string name="git_pull_done">拉取完成</string>
+    <string name="git_push_done">推送完成</string>
+    <string name="git_auth_failed">Git 认证失败。请在服务器上配置凭据（SSH key 或 credential helper）。</string>
+    <string name="git_conflict">操作遇到冲突或被拒绝，请进入完整 IDE 处理。</string>
+    <string name="git_open_ide">打开 IDE</string>
+    <string name="git_not_repo">当前目录不是 Git 仓库。</string>
+    <string name="git_diff_title">差异：%1$s</string>
+    <string name="git_close">关闭</string>
+</resources>

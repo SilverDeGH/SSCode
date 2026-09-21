@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 文件浏览 -->
+    <string name="files_root">Root</string>
+    <string name="files_new">New</string>
+    <string name="files_new_file">New file</string>
+    <string name="files_new_folder">New folder</string>
+    <string name="files_name_hint">Name</string>
+    <string name="files_rename">Rename</string>
+    <string name="files_rename_title">Rename \"%1$s\"</string>
+    <string name="files_move">Move</string>
+    <string name="files_move_title">Move \"%1$s\"</string>
+    <string name="files_move_dest_hint">Destination folder (blank = root)</string>
+    <string name="files_delete_title">Delete \"%1$s\"?</string>
+    <string name="files_delete_message">This action cannot be undone.</string>
+    <string name="files_empty">This folder is empty</string>
+    <string name="files_error">Load failed: %1$s</string>
+    <string name="files_sensitive">Protected file, blocked by server policy</string>
+    <string name="files_refresh">Refresh</string>
+    <string name="files_up">Up one level</string>
+    <string name="files_more_actions">More actions</string>
+
+    <!-- 编辑器 -->
+    <string name="editor_load_error">Failed to open: %1$s</string>
+    <string name="editor_save_error">Save failed: %1$s</string>
+    <string name="editor_find">Find</string>
+    <string name="editor_find_hint">Find in file…</string>
+    <string name="editor_find_next">Next match</string>
+    <string name="editor_close_find">Close find</string>
+    <string name="editor_no_match">No matches</string>
+    <string name="editor_conflict_title">File modified externally</string>
+    <string name="editor_conflict_message">The file changed on the server since you opened it. Reload to get the latest version, or force save to overwrite those changes.</string>
+    <string name="editor_reload">Reload</string>
+    <string name="editor_force_save">Force save</string>
+    <string name="editor_unsaved_title">Unsaved changes</string>
+    <string name="editor_unsaved_message">Save your changes before leaving?</string>
+    <string name="editor_refresh_blocked">Unsaved changes — save or discard before refreshing</string>
+    <string name="editor_discard">Discard</string>
+    <string name="editor_truncated_hint">File is too large and was truncated; saving is disabled.</string>
+    <string name="editor_lines">%1$d lines</string>
+
+    <!-- code-server IDE -->
+    <string name="ide_title">code-server IDE</string>
+    <string name="ide_checking">Checking IDE status…</string>
+    <string name="ide_not_installed">code-server is not installed on this server.</string>
+    <string name="ide_wsl_guide_title">code-server is not supported natively on Windows</string>
+    <string name="ide_wsl_guide_message">Full IDE requires WSL: install WSL on this computer, install code-server inside it and start it listening on 127.0.0.1:8080 (WSL2 forwards loopback to Windows automatically). Then come back and tap Reconnect.</string>
+    <string name="ide_wsl_password_hint">code-server is running inside WSL; check or set its password there (config.yaml).</string>
+    <string name="ide_install">Install code-server</string>
+    <string name="ide_installing">Installing code-server, this may take several minutes…</string>
+    <string name="ide_install_failed">Install failed: %1$s</string>
+    <string name="ide_version">Version %1$s</string>
+    <string name="ide_stopped_hint">code-server is installed but not running.</string>
+    <string name="ide_start">Start code-server</string>
+    <string name="ide_starting">Starting code-server…</string>
+    <string name="ide_error">Error: %1$s</string>
+    <string name="ide_password_label">Password</string>
+    <string name="ide_copy_password">Copy password</string>
+    <string name="ide_password_copied">Password copied</string>
+    <string name="ide_show_password">Show password</string>
+    <string name="ide_hide_password">Hide password</string>
+    <string name="ide_reconnect">Reconnect</string>
+    <string name="ide_landscape_hint">Tip: landscape gives more room</string>
+    <string name="ide_back_workspace">Back to workspace</string>
+</resources>

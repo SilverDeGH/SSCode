@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="catalog_choose">Choose model with this key</string>
+    <string name="catalog_hint">Models reported by this provider. Availability and tool support depend on your plan. Search or enter a model ID, select it, then tap Use. No key needs to be entered again.</string>
+    <string name="catalog_failed">No model list available. This provider may not support discovery, or the companion service needs updating. You can enter a model ID manually.</string>
+    <string name="connection_failed_short">Connection failed</string>
+    <string name="appearance_title">Appearance &amp; language</string>
+    <string name="appearance_hint">Make SScode yours. Changes apply immediately and are saved on this device.</string>
+    <string name="language_title">Language</string>
+    <string name="theme_title">Appearance</string>
+    <string name="follow_system">Follow system</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="agent_settings">Agents</string>
+    <string name="agent_explanation">Configure coding agents with a model and an OpenAI-compatible API. Switching affects new tasks only.</string>
+    <string name="agent_add">Add agent</string>
+    <string name="agent_name">Agent name</string>
+    <string name="agent_model">Model ID</string>
+    <string name="agent_preset">Choose provider preset</string>
+    <string name="agent_url_hint">Provider API base URL, usually ending in /v1. Use HTTPS for remote providers.</string>
+    <string name="agent_key_hint">The key is sent through SSH and stored in protected storage on this server. It is never displayed again.</string>
+    <string name="agent_empty">No agents yet. Add one to start chatting.</string>
+    <string name="agent_use">Use</string>
+    <string name="agent_selected">Selected</string>
+    <string name="agent_test">Test</string>
+    <string name="agent_update_key">Update key</string>
+    <string name="agent_failed">Unable to save or load configuration. Check the connection and fields, then retry.</string>
+    <string name="agent_saved">Configuration saved.</string>
+    <string name="agent_test_ok">Connection and tool calling test passed.</string>
+    <string name="agent_test_failed">Test failed. Check the API key, base URL, model ID and tool calling support.</string>
+    <string name="agent_current">Agent: %1$s · Configure / switch</string>
+    <string name="agent_choose">Configure / choose an agent</string>
+    <string name="ide_web_loading">Loading IDE… First load may take a few minutes.</string>
+    <string name="ide_web_load_failed">IDE page could not load. Tap Reconnect above to retry.</string>
+    <string name="connect_existing_service">Connect to existing service</string>
+    <string name="existing_service_failed">SSH connected, but service authorization failed. Check that sscode-server is running and its startup log contains a valid auth token, then retry.</string>
+    <string name="app_name">SScode</string>
+
+    <!-- 通用 -->
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">OK</string>
+    <string name="save">Save</string>
+    <string name="retry">Retry</string>
+    <string name="loading">Loading…</string>
+    <string name="copy">Copy</string>
+    <string name="copied">Copied</string>
+    <string name="value_missing">Missing</string>
+    <string name="value_inactive">Inactive</string>
+    <string name="value_unknown">Unknown</string>
+    <string name="value_available">Available</string>
+
+    <!-- 服务器列表 -->
+    <string name="servers_title">Servers</string>
+    <string name="add_server">Add server</string>
+    <string name="edit_server">Edit server</string>
+    <string name="empty_servers">No servers yet. Tap + to add your first server.</string>
+    <string name="connect">Connect</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="delete_server_title">Delete server?</string>
+    <string name="delete_server_message">This only removes local config and saved credentials. Services and project data on the server are kept.</string>
+    <string name="server_line">%1$s@%2$s:%3$d</string>
+    <string name="not_connected_yet">Not connected yet</string>
+    <string name="fingerprint_recorded">Fingerprint recorded</string>
+
+    <!-- 服务器编辑 -->
+    <string name="field_name">Name</string>
+    <string name="field_host">Host</string>
+    <string name="field_port">Port</string>
+    <string name="field_username">Username</string>
+    <string name="auth_type">Authentication</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_key">Private key</string>
+    <string name="field_password">Password</string>
+    <string name="field_private_key">Private key (PEM)</string>
+    <string name="field_key_passphrase">Key passphrase (optional)</string>
+    <string name="save_credential">Save credential on this device</string>
+    <string name="credential_keep_hint">Leave blank to keep the saved credential</string>
+
+    <!-- 连接与环境 -->
+    <string name="connecting">Connecting…</string>
+    <string name="connected">Connected</string>
+    <string name="error_auth">Authentication failed. Check password, private key or passphrase.</string>
+    <string name="error_network">Network error: %1$s</string>
+    <string name="host_key_changed_title">Host key changed</string>
+    <string name="host_key_changed_message">The server fingerprint differs from the recorded one and the connection is blocked. Verify the server identity, then trust the new key.\nOld: %1$s\nNew: %2$s</string>
+    <string name="trust_again">Trust new key</string>
+
+    <!-- 环境检测报告 -->
+    <string name="env_report_title">Environment report</string>
+    <string name="env_os">OS</string>
+    <string name="env_platform">Host platform</string>
+    <string name="env_terminal_backend">Terminal backend</string>
+    <string name="env_arch">Arch</string>
+    <string name="env_cpu">CPU cores</string>
+    <string name="env_memory">Memory</string>
+    <string name="env_disk_free">Free disk (home)</string>
+    <string name="env_node">Node.js</string>
+    <string name="env_git">Git</string>
+    <string name="env_tmux">tmux</string>
+    <string name="env_systemd_user">systemd user</string>
+    <string name="env_linger">Auto-start on boot (linger)</string>
+    <string name="env_code_server">code-server</string>
+    <string name="env_sscode_service">sscode-server service</string>
+
+    <!-- 部署 -->
+    <string name="prepare_env">Prepare environment</string>
+    <string name="deploying">Preparing…</string>
+    <string name="deploy_failed">Deploy failed</string>
+    <string name="deploy_done_token">API token acquired and saved</string>
+    <string name="enter_projects">Open projects</string>
+    <string name="missing_token">API token missing. Finish deploy on the server detail page first.</string>
+    <string name="stage_check">Checking current environment</string>
+    <string name="stage_node">Installing Node.js</string>
+    <string name="stage_upload">Uploading sscode-server</string>
+    <string name="stage_service">Writing systemd user service</string>
+    <string name="stage_start">Starting service and waiting for health check</string>
+    <string name="stage_token">Fetching API token</string>
+    <string name="stage_done">Done</string>
+
+    <!-- Windows 直连 -->
+    <string name="windows_guide_title">Windows host: service not detected</string>
+    <string name="windows_guide_message">No Linux environment detected and sscode-server is not running. On the computer, run PowerShell in the server directory: powershell -ExecutionPolicy Bypass -File scripts\\start-windows.ps1 (requires Node.js 22.18+). The service listens on 127.0.0.1:7823; the auth token is written to ~\\.sscode\\auth-token. After it starts, tap Connect to existing service.</string>
+
+    <!-- 项目 -->
+    <string name="projects_title">Projects</string>
+    <string name="empty_projects">No projects yet. Create one to get started.</string>
+    <string name="new_project">New project</string>
+    <string name="field_project_name">Project name</string>
+    <string name="field_project_path">Project path</string>
+    <string name="create">Create</string>
+    <string name="project_tasks_summary">Running %1$d · Queued %2$d</string>
+
+    <!-- 工作区 -->
+    <string name="tab_ai">AI</string>
+    <string name="tab_files">Files</string>
+    <string name="tab_terminal">Terminal</string>
+    <string name="coming_soon">Coming in a later version</string>
+    <string name="input_hint">Input...</string>
+    <string name="send">Send</string>
+    <string name="stop_task">Stop task</string>
+    <string name="approve">Approve</string>
+    <string name="reject">Reject</string>
+    <string name="approval_reason">Reason: %1$s</string>
+    <string name="approval_risk">Risk: %1$s</string>
+    <string name="no_tasks">No tasks yet. Describe your first task below.</string>
+    <string name="session_default_title">Default session</string>
+    <string name="deduplicated_hint">Duplicate request merged</string>
+
+    <!-- 任务状态 -->
+    <string name="state_queued">Queued</string>
+    <string name="state_running">Running</string>
+    <string name="state_awaiting_input">Waiting for answer</string>
+    <string name="state_awaiting_approval">Awaiting approval</string>
+    <string name="state_stopping">Stopping</string>
+    <string name="state_completed">Completed</string>
+    <string name="state_failed">Failed</string>
+    <string name="state_blocked">Blocked</string>
+    <string name="state_stopped">Stopped</string>
+    <string name="state_interrupted">Interrupted</string>
+    <string name="tab_git">Git</string>
+    <string name="ide">IDE</string>
+    <string name="open_ide">Full IDE</string>
+    <string name="open_git">Git panel</string>
+    <string name="import_key_file">Import from file</string>
+    <!-- AI 对话 -->
+    <string name="chat_new">New chat</string>
+    <string name="chat_list">Conversations</string>
+    <string name="chat_draft_title">New chat</string>
+    <string name="chat_draft_hint">Send the first message to start this conversation.</string>
+    <string name="attach_files">Attach files</string>
+    <string name="attach_sheet_title">Select files to attach</string>
+    <string name="attach_root">root</string>
+    <string name="attach_empty">This folder is empty.</string>
+    <string name="attach_done">Done (%1$d)</string>
+    <string name="remove_attachment">Remove attachment</string>
+    <string name="input_hint_append">Input...</string>
+    <string name="append_send">Append</string>
+    <string name="turn_show_details">View work details</string>
+    <string name="turn_tools_files">%1$d tools · %2$d files changed</string>
+    <string name="open_web">Open local web page</string>
+    <string name="open_web_hint">Enter the server port. SScode forwards it securely to this phone.</string>
+    <string name="remote_port">Server port</string>
+    <string name="open">Open</string>
+    <string name="web_browser">Browser</string>
+    <string name="web_tunnel_hint">Keep this preview open to keep the tunnel available. Closing it disconnects browser access. The server website must already be running.</string>
+</resources>

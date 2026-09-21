@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 文件浏览 -->
+    <string name="files_root">根目录</string>
+    <string name="files_new">新建</string>
+    <string name="files_new_file">新建文件</string>
+    <string name="files_new_folder">新建文件夹</string>
+    <string name="files_name_hint">名称</string>
+    <string name="files_rename">重命名</string>
+    <string name="files_rename_title">重命名 \"%1$s\"</string>
+    <string name="files_move">移动</string>
+    <string name="files_move_title">移动 \"%1$s\"</string>
+    <string name="files_move_dest_hint">目标文件夹（留空 = 根目录）</string>
+    <string name="files_delete_title">删除 \"%1$s\"？</string>
+    <string name="files_delete_message">此操作无法撤销。</string>
+    <string name="files_empty">文件夹为空</string>
+    <string name="files_error">加载失败：%1$s</string>
+    <string name="files_sensitive">受保护文件，服务端策略禁止访问</string>
+    <string name="files_refresh">刷新</string>
+    <string name="files_up">返回上一级</string>
+    <string name="files_more_actions">更多操作</string>
+
+    <!-- 编辑器 -->
+    <string name="editor_load_error">打开失败：%1$s</string>
+    <string name="editor_save_error">保存失败：%1$s</string>
+    <string name="editor_find">查找</string>
+    <string name="editor_find_hint">在文件中查找…</string>
+    <string name="editor_find_next">下一个匹配</string>
+    <string name="editor_close_find">关闭查找</string>
+    <string name="editor_no_match">无匹配</string>
+    <string name="editor_conflict_title">文件已被外部修改</string>
+    <string name="editor_conflict_message">文件在你打开后被外部修改。可重新加载获取最新内容，或强制保存覆盖外部修改。</string>
+    <string name="editor_reload">重新加载</string>
+    <string name="editor_force_save">强制保存</string>
+    <string name="editor_unsaved_title">有未保存的修改</string>
+    <string name="editor_unsaved_message">离开前保存修改吗？</string>
+    <string name="editor_refresh_blocked">有未保存的修改，请先保存或放弃再刷新</string>
+    <string name="editor_discard">放弃修改</string>
+    <string name="editor_truncated_hint">文件过大已被截断，保存已禁用。</string>
+    <string name="editor_lines">%1$d 行</string>
+
+    <!-- code-server IDE -->
+    <string name="ide_title">code-server IDE</string>
+    <string name="ide_checking">正在检查 IDE 状态…</string>
+    <string name="ide_not_installed">此服务器尚未安装 code-server。</string>
+    <string name="ide_wsl_guide_title">code-server 不支持 Windows 原生运行</string>
+    <string name="ide_wsl_guide_message">完整 IDE 需要 WSL：在这台电脑上安装 WSL，在其中安装 code-server 并以 127.0.0.1:8080 监听启动（WSL2 会自动转发到 Windows 回环），完成后返回此处点击重试。</string>
+    <string name="ide_wsl_password_hint">code-server 运行于 WSL 内，密码请在 WSL 中查看或设置（config.yaml）。</string>
+    <string name="ide_install">安装 code-server</string>
+    <string name="ide_installing">正在安装 code-server，可能需要几分钟…</string>
+    <string name="ide_install_failed">安装失败：%1$s</string>
+    <string name="ide_version">版本 %1$s</string>
+    <string name="ide_stopped_hint">code-server 已安装但未运行。</string>
+    <string name="ide_start">启动 code-server</string>
+    <string name="ide_starting">正在启动 code-server…</string>
+    <string name="ide_error">错误：%1$s</string>
+    <string name="ide_password_label">密码</string>
+    <string name="ide_copy_password">复制密码</string>
+    <string name="ide_password_copied">密码已复制</string>
+    <string name="ide_show_password">显示密码</string>
+    <string name="ide_hide_password">隐藏密码</string>
+    <string name="ide_reconnect">重连</string>
+    <string name="ide_landscape_hint">提示：横屏可获得更大视野</string>
+    <string name="ide_back_workspace">返回工作区</string>
+</resources>

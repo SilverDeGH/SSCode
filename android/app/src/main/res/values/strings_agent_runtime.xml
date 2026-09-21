@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="legacy_auto_approval">Legacy server: keep this workspace online for automatic approvals. Update the companion service after this task for offline full control.</string>
+    <string name="runtime_upgrade_required">Update the companion service from the server screen before using approval modes.</string>
+    <string name="workspace_reconnecting">Disconnected. Reconnecting; server tasks keep running.</string>
+    <string name="mode_manual">Standard</string>
+    <string name="mode_auto">Auto approval</string>
+    <string name="mode_full">Full control</string>
+    <string name="mode_manual_hint">Active tasks in this conversation and future tasks: routine edits and builds run automatically; other operations request approval.</string>
+    <string name="mode_auto_hint">Active tasks in this conversation and future tasks: approve all requests, including risky commands; retain sensitive file tool denials.</string>
+    <string name="mode_full_hint">Apply immediately to active tasks in this conversation and future tasks: approve every operation and continue without asking.</string>
+    <string name="agent_waiting">Model is working; waiting for progress…</string>
+    <string name="agent_protocol_hint">Auto uses Responses for GPT-6 and Chat Completions for other models; you can override it.</string>
+</resources>

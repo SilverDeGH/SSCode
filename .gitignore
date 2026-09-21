@@ -1,0 +1,36 @@
+# Local toolchains (JDK / Gradle / Android SDK / OpenSSH)
+tools/
+.gradle-cache/
+
+# Build outputs
+dist/
+**/build/
+**/.gradle/
+**/.kotlin/
+**/node_modules/
+
+# Local config
+android/local.properties
+.vscode/
+
+# Local test / debug artifacts
+*.log
+current.png
+current-ui.xml
+screen*.png
+android-0.2.4-build.txt
+android-build-results.txt
+android-windows-acceptance-build.txt
+android-windows-acceptance-test-build.txt
+engine-test-results.txt
+server-test-results.txt
+windows-acceptance-results.txt
+windows-ai-acceptance-results.txt
+windows-ai-git-acceptance-results.txt
+
+# Local e2e fixtures (embedded/bare git repos)
+test-project/windows-e2e-*/
+
+# OS junk
+Thumbs.db
+.DS_Store

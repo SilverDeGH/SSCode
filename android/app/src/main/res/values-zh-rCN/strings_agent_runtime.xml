@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="legacy_auto_approval">旧服务兼容模式：保持工作区在线即可自动批准。任务完成后更新配套服务，可在离线时继续全接管。</string>
+    <string name="runtime_upgrade_required">请先在服务器详情页重新部署配套服务，再使用自动审批或全接管。</string>
+    <string name="workspace_reconnecting">连接中断，正在自动重连；服务器任务继续运行</string>
+    <string name="mode_manual">常规审批</string>
+    <string name="mode_auto">自动审批</string>
+    <string name="mode_full">全接管</string>
+    <string name="mode_manual_hint">立即应用于当前对话的活动任务及后续新任务：常规读写和构建自动执行，其他操作请求审批。</string>
+    <string name="mode_auto_hint">立即应用于当前对话的活动任务及后续新任务：自动批准所有审批请求（含高风险命令），保留敏感文件工具的禁止规则。</string>
+    <string name="mode_full_hint">立即应用于当前对话的活动任务及后续新任务：批准全部操作并持续执行，不再逐项询问。</string>
+    <string name="agent_waiting">模型正在处理，等待可展示的进度…</string>
+    <string name="agent_protocol_hint">auto 对 GPT-6 使用 Responses，其他模型使用 Chat Completions；可手动指定。</string>
+</resources>

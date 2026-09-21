@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 终端 -->
+    <string name="terminal_title">Terminal</string>
+    <string name="terminal_connecting">Connecting…</string>
+    <string name="terminal_connected">Connected (%1$s)</string>
+    <string name="terminal_disconnected">Disconnected</string>
+    <string name="terminal_backend_limited">Backend %1$s: full-screen interactive programs (vim etc.) are not supported; reconnect replays history while the service is alive, sessions are lost if the service restarts.</string>
+    <string name="terminal_reconnect_hint">Connection lost. The session on the server is still alive.</string>
+    <string name="terminal_reconnect">Reconnect</string>
+    <string name="terminal_input_hint">Input...</string>
+    <string name="terminal_paste">Paste</string>
+    <string name="terminal_font_smaller">A-</string>
+    <string name="terminal_font_larger">A+</string>
+
+    <!-- Git -->
+    <string name="git_title">Git</string>
+    <string name="git_branch_label">Branch: %1$s</string>
+    <string name="git_ahead_behind">ahead %1$d · behind %2$d</string>
+    <string name="git_new_branch">New branch</string>
+    <string name="git_switch_branch">Switch branch</string>
+    <string name="git_branch_name_hint">Branch name</string>
+    <string name="git_branch_done">Done</string>
+    <string name="git_no_changes">Working tree clean</string>
+    <string name="git_stage">Stage</string>
+    <string name="git_unstage">Unstage</string>
+    <string name="git_commit_hint">Commit message…</string>
+    <string name="git_commit">Commit</string>
+    <string name="git_commit_done">Committed</string>
+    <string name="git_commit_identity_error">Git identity is not configured. On the server run: git config --global user.name / user.email</string>
+    <string name="git_pull">Pull</string>
+    <string name="git_push">Push</string>
+    <string name="git_pull_done">Pull complete</string>
+    <string name="git_push_done">Push complete</string>
+    <string name="git_auth_failed">Git authentication failed. Configure credentials on the server (SSH key or credential helper).</string>
+    <string name="git_conflict">The operation hit conflicts or was rejected. Please resolve it in the full IDE.</string>
+    <string name="git_open_ide">Open IDE</string>
+    <string name="git_not_repo">Current directory is not a Git repository.</string>
+    <string name="git_diff_title">Diff: %1$s</string>
+    <string name="git_close">Close</string>
+</resources>
