@@ -1,6 +1,6 @@
 {
   "name": "sscode-server",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "SScode companion service: remote AI coding workspace server (runs on user's Linux server, loopback only)",
   "type": "module",
   "engines": { "node": ">=22.18" },

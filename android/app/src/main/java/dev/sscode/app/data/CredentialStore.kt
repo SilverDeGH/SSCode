@@ -18,8 +18,12 @@ class CredentialStore(private val context: Context) {
         const val KEY_PRIVATE_KEY_PEM = "private-key-pem"
         const val KEY_KEY_PASSPHRASE = "key-passphrase"
         const val KEY_API_TOKEN = "api-token"
+        const val KEY_REFRESH_TOKEN = "refresh-token"
+        const val KEY_DEVICE_ID = "device-id"
 
         fun apiTokenRef(serverId: Long) = "api-token-$serverId"
+        fun refreshTokenRef(serverId: Long) = "refresh-token-$serverId"
+        fun deviceIdRef(serverId: Long) = "device-id-$serverId"
     }
 
     @Volatile

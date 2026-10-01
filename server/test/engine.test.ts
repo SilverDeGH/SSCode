@@ -306,3 +306,29 @@ test('recoverOnBoot 置 interrupted，resumeInterrupted 重新排队', async t =
   assert.equal(resumed.state, 'queued');
   assert.match(resumed.summary ?? '', /重新排队/);
 });
+
+// h. submitTask 透传发起设备 id
+test('submitTask 透传 requesterDeviceId 并落库；缺省为 null', async t => {
+  const env = makeEnv(() => new MockAdapter([]));
+  t.after(() => cleanup(env));
+
+  const { task } = await env.engine.submitTask({
+    projectId: env.project.id,
+    sessionId: env.session.id,
+    input: '来自设备的任务',
+    clientRequestId: 'req-device',
+    requesterDeviceId: 'dev-1',
+  });
+  assert.equal(task.createdByDeviceId, 'dev-1');
+  assert.equal(env.repo.tasks.getById(task.id)?.createdByDeviceId, 'dev-1');
+  await waitTaskState(env.repo, task.id, ['completed']);
+
+  const legacy = await env.engine.submitTask({
+    projectId: env.project.id,
+    sessionId: env.session.id,
+    input: '旧 Token 任务',
+    clientRequestId: 'req-legacy',
+  });
+  assert.equal(legacy.task.createdByDeviceId, null);
+  await waitTaskState(env.repo, legacy.task.id, ['completed']);
+});

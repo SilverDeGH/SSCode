@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.sp
 import dev.sscode.app.R
 import dev.sscode.app.api.ApiException
 import dev.sscode.app.api.FilesApi
+import dev.sscode.app.api.SessionRegistry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -108,7 +109,12 @@ fun EditorScreen(
     filePath: String,
     onBack: () -> Unit,
 ) {
-    val api = remember { FilesApi(baseUrl, token) }
+    // 会话模式：按隧道 origin 找回 SessionManager，逐请求取最新 access token（含 401 刷新重试）
+    val session = remember(baseUrl) { SessionRegistry.forUrl(baseUrl) }
+    val api = remember(session) {
+        if (session != null) FilesApi(baseUrl, { session.accessTokenBlocking() }, session)
+        else FilesApi(baseUrl, token)
+    }
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
 

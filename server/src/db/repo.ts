@@ -16,6 +16,7 @@ import type {
   ToolName,
 } from '../types.ts';
 import { ERR, TASK_TRANSITIONS, TERMINAL_STATES } from '../types.ts';
+import { AuthSessionsRepo, DevicesRepo, ProjectMembersRepo } from './authRepo.ts';
 
 export class RepoError extends Error {
   code: string;
@@ -68,6 +69,7 @@ interface TaskRow {
   summary: string | null;
   model_config_id: string | null;
   client_request_id: string;
+  created_by_device_id: string | null;
   created_at: number;
   started_at: number | null;
   ended_at: number | null;
@@ -97,6 +99,7 @@ interface ApprovalRow {
   state: string;
   decided_at: number | null;
   note: string | null;
+  requester_device_id: string | null;
   created_at: number;
 }
 
@@ -158,6 +161,7 @@ function mapTask(r: TaskRow): Task {
     summary: r.summary,
     modelConfigId: r.model_config_id,
     clientRequestId: r.client_request_id,
+    createdByDeviceId: r.created_by_device_id,
     createdAt: r.created_at,
     startedAt: r.started_at,
     endedAt: r.ended_at,
@@ -191,6 +195,7 @@ function mapApproval(r: ApprovalRow): Approval {
     state: r.state as Approval['state'],
     decidedAt: r.decided_at,
     note: r.note,
+    requesterDeviceId: r.requester_device_id,
     createdAt: r.created_at,
   };
 }
@@ -253,6 +258,15 @@ function insertEvent(
     .prepare('INSERT INTO events (project_id, task_id, type, payload, created_at) VALUES (?, ?, ?, ?, ?)')
     .run(projectId, taskId, type, JSON.stringify(payload), createdAt);
   return { id: Number(res.lastInsertRowid), projectId, taskId, type, payload, createdAt };
+}
+
+/** 解析设备名供审批事件与 API 展示；设备行不存在时返回 null（仅保留 id），已撤销设备仍返回其名字 */
+function deviceNameOf(db: DatabaseSync, deviceId: string | null): string | null {
+  if (deviceId === null) return null;
+  const row = db.prepare('SELECT name FROM devices WHERE id = ?').get(deviceId) as
+    | { name: string }
+    | undefined;
+  return row ? row.name : null;
 }
 
 // ---------------------------------------------------------------- projects
@@ -320,6 +334,7 @@ class ProjectsRepo {
       db.prepare('DELETE FROM tasks WHERE project_id = ?').run(id);
       db.prepare('DELETE FROM sessions WHERE project_id = ?').run(id);
       db.prepare('DELETE FROM events WHERE project_id = ?').run(id);
+      db.prepare('DELETE FROM project_members WHERE project_id = ?').run(id);
       const res = db.prepare('DELETE FROM projects WHERE id = ?').run(id);
       return Number(res.changes) > 0;
     });
@@ -376,6 +391,8 @@ export interface CreateTaskInput {
   input: string;
   clientRequestId: string;
   modelConfigId?: string | null;
+  /** 提交任务的设备 id（会话认证）；旧静态 Token 或迁移前数据为 null */
+  requesterDeviceId?: string | null;
 }
 
 class TasksRepo {
@@ -406,14 +423,15 @@ class TasksRepo {
         summary: null,
         modelConfigId: input.modelConfigId ?? null,
         clientRequestId: input.clientRequestId,
+        createdByDeviceId: input.requesterDeviceId ?? null,
         createdAt: Date.now(),
         startedAt: null,
         endedAt: null,
       };
       this.#db
         .prepare(
-          'INSERT INTO tasks (id, project_id, session_id, seq, state, input, summary, model_config_id, client_request_id, created_at, started_at, ended_at) ' +
-            'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'INSERT INTO tasks (id, project_id, session_id, seq, state, input, summary, model_config_id, client_request_id, created_by_device_id, created_at, started_at, ended_at) ' +
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         )
         .run(
           task.id,
@@ -425,11 +443,21 @@ class TasksRepo {
           task.summary,
           task.modelConfigId,
           task.clientRequestId,
+          task.createdByDeviceId,
           task.createdAt,
           task.startedAt,
           task.endedAt,
         );
       this.#db.prepare('UPDATE tasks SET approval_mode = ? WHERE id = ?').run(task.approvalMode!, task.id);
+      insertEvent(this.#db, task.projectId, task.id, 'task.created', {
+        id: task.id,
+        projectId: task.projectId,
+        sessionId: task.sessionId,
+        input: task.input.slice(0, 500),
+        state: task.state,
+        approvalMode: task.approvalMode,
+        createdAt: task.createdAt,
+      });
       return task;
     });
   }
@@ -626,8 +654,8 @@ class ApprovalsRepo {
 
   create(input: CreateApprovalInput): Approval {
     const taskRow = this.#db
-      .prepare('SELECT project_id FROM tasks WHERE id = ?')
-      .get(input.taskId) as { project_id: string } | undefined;
+      .prepare('SELECT project_id, created_by_device_id FROM tasks WHERE id = ?')
+      .get(input.taskId) as { project_id: string; created_by_device_id: string | null } | undefined;
     if (!taskRow) {
       throw new RepoError(ERR.NOT_FOUND, `task not found: ${input.taskId}`);
     }
@@ -642,12 +670,13 @@ class ApprovalsRepo {
       state: 'pending',
       decidedAt: null,
       note: null,
+      requesterDeviceId: taskRow.created_by_device_id,
       createdAt: Date.now(),
     };
     this.#db
       .prepare(
-        'INSERT INTO approvals (id, task_id, tool_call_id, operation, params, reason, risk_summary, state, decided_at, note, created_at) ' +
-          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO approvals (id, task_id, tool_call_id, operation, params, reason, risk_summary, state, decided_at, note, requester_device_id, created_at) ' +
+          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       )
       .run(
         approval.id,
@@ -660,6 +689,7 @@ class ApprovalsRepo {
         approval.state,
         approval.decidedAt,
         approval.note,
+        approval.requesterDeviceId,
         approval.createdAt,
       );
     insertEvent(this.#db, taskRow.project_id, approval.taskId, 'approval.requested', {
@@ -668,6 +698,8 @@ class ApprovalsRepo {
       toolCallId: approval.toolCallId,
       operation: approval.operation,
       riskSummary: approval.riskSummary,
+      requesterDeviceId: approval.requesterDeviceId,
+      requesterDeviceName: deviceNameOf(this.#db, approval.requesterDeviceId),
     });
     return approval;
   }
@@ -706,7 +738,7 @@ class ApprovalsRepo {
         .prepare('UPDATE tool_calls SET state = ? WHERE id = ?')
         .run(newState, current.toolCallId);
       const taskRow = this.#db
-        .prepare('SELECT project_id FROM tasks WHERE id = ?')
+        .prepare('SELECT project_id, created_by_device_id FROM tasks WHERE id = ?')
         .get(current.taskId) as { project_id: string } | undefined;
       insertEvent(this.#db, taskRow ? taskRow.project_id : null, current.taskId, 'approval.decided', {
         approvalId: id,
@@ -714,6 +746,8 @@ class ApprovalsRepo {
         toolCallId: current.toolCallId,
         decision: newState,
         note: note ?? null,
+        requesterDeviceId: current.requesterDeviceId,
+        requesterDeviceName: deviceNameOf(this.#db, current.requesterDeviceId),
       });
       const updated = this.getById(id);
       if (!updated) throw new RepoError(ERR.INTERNAL, `approval vanished after update: ${id}`);
@@ -1011,6 +1045,9 @@ export class Repo {
   readonly modelConfigs: ModelConfigsRepo;
   readonly idempotency: IdempotencyRepo;
   readonly kv: KvRepo;
+  readonly devices: DevicesRepo;
+  readonly authSessions: AuthSessionsRepo;
+  readonly projectMembers: ProjectMembersRepo;
 
   constructor(db: DatabaseSync) {
     this.projects = new ProjectsRepo(db);
@@ -1023,5 +1060,8 @@ export class Repo {
     this.modelConfigs = new ModelConfigsRepo(db);
     this.idempotency = new IdempotencyRepo(db);
     this.kv = new KvRepo(db);
+    this.devices = new DevicesRepo(db);
+    this.authSessions = new AuthSessionsRepo(db);
+    this.projectMembers = new ProjectMembersRepo(db);
   }
 }

@@ -19,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,7 +73,13 @@ private fun stageLabel(stage: DeployStage): Int = when (stage) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ServerDetailScreen(serverId: Long, onBack: () -> Unit, onOpenProjects: (Long) -> Unit) {
+fun ServerDetailScreen(
+    serverId: Long,
+    onBack: () -> Unit,
+    onOpenProjects: (Long) -> Unit,
+    onBind: (Long) -> Unit,
+    onOpenDevices: (Long) -> Unit,
+) {
     val context = LocalContext.current
     val dao = remember { AppContainer.database(context).serverDao() }
     val credentials = remember { AppContainer.credentials(context) }
@@ -92,6 +99,7 @@ fun ServerDetailScreen(serverId: Long, onBack: () -> Unit, onOpenProjects: (Long
     var deployStages by remember { mutableStateOf<List<DeployStage>>(emptyList()) }
     var deployError by remember { mutableStateOf<String?>(null) }
     var tokenReady by remember { mutableStateOf(false) }
+    var sessionBound by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         onDispose { session?.close() }
@@ -125,6 +133,10 @@ fun ServerDetailScreen(serverId: Long, onBack: () -> Unit, onOpenProjects: (Long
                 tokenReady = credentials.get(
                     CredentialStore.apiTokenRef(serverId),
                     CredentialStore.KEY_API_TOKEN,
+                ) != null
+                sessionBound = credentials.get(
+                    CredentialStore.refreshTokenRef(serverId),
+                    CredentialStore.KEY_REFRESH_TOKEN,
                 ) != null
                 dao.updateStatus(serverId, connectedText)
             } catch (e: HostKeyChangedException) {
@@ -371,9 +383,21 @@ fun ServerDetailScreen(serverId: Long, onBack: () -> Unit, onOpenProjects: (Long
                     ) { Text(stringResource(R.string.prepare_env)) }
                 }
 
-                if (connected && tokenReady) {
+                if (connected && (tokenReady || sessionBound)) {
                     Button(onClick = { onOpenProjects(serverId) }, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.enter_projects))
+                    }
+                }
+
+                if (connected && report.existingServiceReady) {
+                    OutlinedButton(onClick = { onBind(serverId) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.bind_entry))
+                    }
+                }
+
+                if (connected && (tokenReady || sessionBound)) {
+                    TextButton(onClick = { onOpenDevices(serverId) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.devices_manage))
                     }
                 }
             }

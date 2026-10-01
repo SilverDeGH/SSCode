@@ -64,6 +64,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.sscode.app.R
+import dev.sscode.app.api.SessionRegistry
 import dev.sscode.app.api.TerminalCallbacks
 import dev.sscode.app.api.TerminalWsClient
 import dev.sscode.app.terminal.TerminalModel
@@ -122,16 +123,25 @@ fun TerminalScreen(
     var input by remember { mutableStateOf("") }
     var connectNonce by remember { mutableIntStateOf(0) }
     var terminalBackend by remember { mutableStateOf<String?>(null) }
+    // 会话模式下服务端 WS 升级只认本地管理员令牌（迁移窗口限制），被拒时提示
+    var legacyTokenRequired by remember { mutableStateOf(false) }
+    val session = remember(wsBaseUrl) { SessionRegistry.forUrl(wsBaseUrl) }
     val clientState = remember { mutableStateOf<TerminalWsClient?>(null) }
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
     val clipboard = LocalClipboardManager.current
 
     DisposableEffect(wsBaseUrl, token, projectId, connectNonce) {
-        val client = TerminalWsClient(wsBaseUrl, token)
+        // connect/reconnect 时经 provider 取最新 token
+        val client = if (session != null) {
+            TerminalWsClient(wsBaseUrl, { session.accessTokenBlocking() })
+        } else {
+            TerminalWsClient(wsBaseUrl, token)
+        }
         clientState.value = client
         connected = false
         disconnected = false
         terminalBackend = null
+        legacyTokenRequired = false
         client.connect(projectId, object : TerminalCallbacks {
             override fun onReady(backendName: String) {
                 mainHandler.post {
@@ -153,10 +163,11 @@ fun TerminalScreen(
                 }
             }
 
-            override fun onFailure(error: String) {
+            override fun onFailure(error: String, httpStatus: Int?) {
                 mainHandler.post {
                     connected = false
                     disconnected = true
+                    if (session != null && httpStatus == 401) legacyTokenRequired = true
                 }
             }
         })
@@ -199,6 +210,7 @@ fun TerminalScreen(
 
     val statusText = when {
         connected -> stringResource(R.string.connected)
+        legacyTokenRequired -> stringResource(R.string.terminal_legacy_token_required)
         disconnected -> stringResource(R.string.terminal_disconnected)
         else -> stringResource(R.string.terminal_connecting)
     }
@@ -301,7 +313,10 @@ fun TerminalScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            stringResource(R.string.terminal_reconnect_hint),
+                            stringResource(
+                                if (legacyTokenRequired) R.string.terminal_legacy_token_required
+                                else R.string.terminal_reconnect_hint,
+                            ),
                             color = Color.White,
                             style = MaterialTheme.typography.bodyMedium,
                         )

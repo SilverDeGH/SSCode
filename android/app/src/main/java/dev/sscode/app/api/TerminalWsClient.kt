@@ -15,7 +15,8 @@ interface TerminalCallbacks {
     fun onReady(backend: String)
     fun onOutput(data: String)
     fun onClosed(reason: String)
-    fun onFailure(error: String)
+    /** httpStatus 为升级被拒绝时的 HTTP 状态码（如 401）；非 HTTP 失败为 null。 */
+    fun onFailure(error: String, httpStatus: Int?)
 }
 
 @Serializable
@@ -35,8 +36,12 @@ private data class TerminalResizeFrame(val type: String, val cols: Int, val rows
  * 终端 WebSocket 客户端。
  * wsBaseUrl 形如 ws://127.0.0.1:<本地转发端口>（不含 /v1）。
  * 断开后重新 [connect] 即可接回服务端持久会话（tmux）。
+ * 旧静态 token：`TerminalWsClient(wsBaseUrl, token)`；设备会话：传 [tokenProvider]，
+ * 每次 connect/reconnect 取最新 access token（服务端升级握手在迁移窗口内只认静态令牌）。
  */
-class TerminalWsClient(private val wsBaseUrl: String, private val token: String) {
+class TerminalWsClient(private val wsBaseUrl: String, private val tokenProvider: () -> String?) {
+
+    constructor(wsBaseUrl: String, token: String) : this(wsBaseUrl, { token })
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
@@ -51,6 +56,7 @@ class TerminalWsClient(private val wsBaseUrl: String, private val token: String)
 
     fun connect(projectId: String, callbacks: TerminalCallbacks) {
         val base = wsBaseUrl.trimEnd('/')
+        val token = tokenProvider().orEmpty()
         val url = "$base/v1/terminal/ws?projectId=${enc(projectId)}&token=${enc(token)}"
         ws = client.newWebSocket(
             Request.Builder().url(url).build(),
@@ -76,7 +82,7 @@ class TerminalWsClient(private val wsBaseUrl: String, private val token: String)
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    callbacks.onFailure(t.message ?: "connection failed")
+                    callbacks.onFailure(t.message ?: "connection failed", response?.code)
                 }
             },
         )

@@ -1,8 +1,43 @@
 /** SQLite 建表语句与迁移（P2-06：版本化迁移）。node:sqlite，无外部依赖。 */
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 4;
 
 export const MIGRATIONS: Record<number, string> = {
+  // 审批“发起设备”（计划文档 6.3）：记录任务提交设备，审批卡片据此展示发起设备
+  4: `
+ALTER TABLE tasks ADD COLUMN created_by_device_id TEXT;
+ALTER TABLE approvals ADD COLUMN requester_device_id TEXT;
+`,
+  // P1：设备、认证会话与项目成员表（计划文档 4.3）
+  3: `
+CREATE TABLE devices (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  last_seen_at INTEGER NOT NULL,
+  revoked_at INTEGER
+);
+
+CREATE TABLE auth_sessions (
+  id TEXT PRIMARY KEY,
+  device_id TEXT NOT NULL REFERENCES devices(id),
+  refresh_token_hash TEXT NOT NULL UNIQUE,
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL,
+  last_seen_at INTEGER NOT NULL,
+  revoked_at INTEGER
+);
+CREATE INDEX idx_auth_sessions_device ON auth_sessions(device_id);
+
+CREATE TABLE project_members (
+  project_id TEXT NOT NULL REFERENCES projects(id),
+  device_id TEXT NOT NULL REFERENCES devices(id),
+  role TEXT NOT NULL CHECK (role IN ('owner', 'operator', 'reviewer', 'viewer')),
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (project_id, device_id)
+);
+CREATE INDEX idx_project_members_device ON project_members(device_id);
+`,
   2: `ALTER TABLE tasks ADD COLUMN approval_mode TEXT NOT NULL DEFAULT 'manual';`,
   1: `
 CREATE TABLE projects (

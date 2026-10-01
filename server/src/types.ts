@@ -85,6 +85,7 @@ export interface Task {
   summary: string | null;        // 结束总结：做了什么/改了哪些文件/验证结果/遗留
   modelConfigId: string | null;  // 任务开始时确定的模型
   clientRequestId: string;       // 客户端请求标识（去重）
+  createdByDeviceId: string | null; // 提交任务的设备；旧静态 Token 或迁移前数据为 null
   createdAt: number;
   startedAt: number | null;
   endedAt: number | null;
@@ -114,6 +115,7 @@ export interface Approval {
   state: 'pending' | 'approved' | 'rejected' | 'expired';
   decidedAt: number | null;
   note: string | null;      // 拒绝时补充要求
+  requesterDeviceId: string | null; // 发起任务的设备；旧静态 Token 或迁移前数据为 null
   createdAt: number;
 }
 
@@ -122,7 +124,7 @@ export interface EventRecord {
   id: number;               // 自增，事件游标
   projectId: string | null;
   taskId: string | null;
-  type: string;             // task.state / tool.start / tool.end / approval.requested / approval.decided / task.message / task.appended / log
+  type: string;             // task.created / task.state / task.changed / tool.start / tool.end / approval.requested / approval.decided / task.message / task.appended / audit / log / codex.task.state（本机 Codex 任务列表变化，projectId=null，payload {available, taskCount}） / codex.task.updated（单个 Codex 任务变化，projectId 为 cwd 命中的 SSCode 项目，可空，payload {task}）
   payload: Record<string, unknown>;
   createdAt: number;
 }
@@ -157,6 +159,48 @@ export interface ModelConfig {
   isDefault: boolean;
   createdAt: number;
 }
+
+// ---------------------------------------------------------------- 会话认证（P1，计划文档 4.3）
+
+/** 项目角色（权限矩阵见计划文档 4.3；P2 起逐路由启用检查） */
+export type ProjectRole = 'owner' | 'operator' | 'reviewer' | 'viewer';
+
+export const PROJECT_ROLES: readonly ProjectRole[] = ['owner', 'operator', 'reviewer', 'viewer'];
+
+/** 绑定的客户端设备（手机等） */
+export interface Device {
+  id: string;
+  name: string;
+  createdAt: number;
+  lastSeenAt: number;
+  revokedAt: number | null;   // 非 null 表示已撤销，立即失效
+}
+
+/** 设备登录会话；refresh token 只存 sha256 哈希，不存明文 */
+export interface AuthSession {
+  id: string;
+  deviceId: string;
+  refreshTokenHash: string;
+  createdAt: number;
+  expiresAt: number;          // refresh token 过期时间
+  lastSeenAt: number;
+  revokedAt: number | null;
+}
+
+export interface ProjectMember {
+  projectId: string;
+  deviceId: string;
+  role: ProjectRole;
+  createdAt: number;
+}
+
+/**
+ * 认证上下文：路由处理前解析出的调用者身份。
+ * legacy = 旧静态 authToken（迁移兼容窗口内全通过）；session = 新设备会话。
+ */
+export type AuthContext =
+  | { kind: 'legacy' }
+  | { kind: 'session'; deviceId: string; sessionId: string };
 
 // ---------------------------------------------------------------- 模型适配层契约
 
@@ -201,6 +245,8 @@ export interface SubmitTaskInput {
   input: string;
   clientRequestId: string;
   modelConfigId?: string;
+  /** 提交任务的设备 id（会话认证）；旧静态 Token 缺省为 null */
+  requesterDeviceId?: string | null;
 }
 
 export interface EngineFacade {
@@ -242,6 +288,8 @@ export interface ApiError {
 /** 通用错误码 */
 export const ERR = {
   UNAUTHORIZED: 'unauthorized',
+  FORBIDDEN: 'forbidden',
+  RATE_LIMITED: 'rate_limited',
   NOT_FOUND: 'not_found',
   INVALID_STATE: 'invalid_state',
   VALIDATION: 'validation_error',

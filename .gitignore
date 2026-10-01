@@ -29,7 +29,10 @@ windows-ai-acceptance-results.txt
 windows-ai-git-acceptance-results.txt
 
 # Local e2e fixtures (embedded/bare git repos)
-test-project/windows-e2e-*/
+test-project/*/
+
+# Local scratch (codex-local-hub reference checkout)
+.tmp-codex-local-hub/
 
 # OS junk
 Thumbs.db

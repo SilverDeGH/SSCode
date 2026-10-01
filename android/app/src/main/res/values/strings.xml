@@ -58,6 +58,11 @@
     <string name="connect">Connect</string>
     <string name="edit">Edit</string>
     <string name="delete">Delete</string>
+    <string name="project_delete">Delete project</string>
+    <string name="project_delete_confirm_title">Delete project?</string>
+    <string name="project_delete_confirm_message">This deletes project “%1$s” together with all of its sessions, tasks and approval records. The project files on disk are not deleted. This action cannot be undone.</string>
+    <string name="project_delete_conflict">The project still has active tasks. Stop them before deleting.</string>
+    <string name="project_delete_owner_only">Only the project owner can delete this project.</string>
     <string name="delete_server_title">Delete server?</string>
     <string name="delete_server_message">This only removes local config and saved credentials. Services and project data on the server are kept.</string>
     <string name="server_line">%1$s@%2$s:%3$d</string>
@@ -144,6 +149,8 @@
     <string name="reject">Reject</string>
     <string name="approval_reason">Reason: %1$s</string>
     <string name="approval_risk">Risk: %1$s</string>
+    <string name="approval_requester">Requested by: %1$s</string>
+    <string name="approval_requester_local">Local admin</string>
     <string name="no_tasks">No tasks yet. Describe your first task below.</string>
     <string name="session_default_title">Default session</string>
     <string name="deduplicated_hint">Duplicate request merged</string>
@@ -168,6 +175,9 @@
     <string name="chat_new">New chat</string>
     <string name="chat_list">Conversations</string>
     <string name="chat_draft_title">New chat</string>
+    <string name="chat_history">History</string>
+    <string name="chat_history_sessions">Chats</string>
+    <string name="chat_history_codex">Codex</string>
     <string name="chat_draft_hint">Send the first message to start this conversation.</string>
     <string name="attach_files">Attach files</string>
     <string name="attach_sheet_title">Select files to attach</string>
@@ -185,4 +195,54 @@
     <string name="open">Open</string>
     <string name="web_browser">Browser</string>
     <string name="web_tunnel_hint">Keep this preview open to keep the tunnel available. Closing it disconnects browser access. The server website must already be running.</string>
+
+    <!-- 设备绑定 / 会话 -->
+    <string name="bind_title">Bind device</string>
+    <string name="bind_explanation">Bind this phone to the server with a model API key. The key is verified once and stored only on the server; this phone keeps a revocable session instead.</string>
+    <string name="bind_device_name">Device name</string>
+    <string name="bind_submit">Bind and continue</string>
+    <string name="bind_failed">Binding failed</string>
+    <string name="bind_rate_limited">Too many attempts. Please wait a few minutes and try again.</string>
+    <string name="bind_key_hint">The key is used only for this one verification. It is never stored on this phone.</string>
+    <string name="bind_entry">Bind this device (API key)</string>
+    <string name="session_expired">Session expired. Bind again to continue.</string>
+    <string name="session_rebind">Bind again</string>
+    <string name="no_permission">No permission for this action.</string>
+    <string name="workspace_viewer_hint">Viewer role: read-only, you can browse tasks and messages</string>
+    <string name="workspace_reviewer_hint">Reviewer role: you can approve requests but cannot submit tasks</string>
+    <string name="devices_title">Device sessions</string>
+    <string name="devices_current">This device</string>
+    <string name="devices_revoked">Revoked</string>
+    <string name="devices_last_seen">Last active %1$s</string>
+    <string name="devices_empty">No bound devices yet.</string>
+    <string name="devices_sign_out">Sign out this device</string>
+    <string name="devices_sign_out_confirm">Revoke this device\'s session on the server and clear local credentials? You will need to bind again.</string>
+    <string name="devices_revoke">Revoke</string>
+    <string name="devices_revoke_confirm">Revoke device %1$s? It will lose access immediately.</string>
+    <string name="devices_manage">Manage devices</string>
+    <string name="time_hours_ago">%1$d h ago</string>
+    <string name="time_days_ago">%1$d d ago</string>
+    <string name="members_title">Project members</string>
+    <string name="members_empty">No members yet.</string>
+    <string name="members_add">Add member</string>
+    <string name="members_pick_device">Select device</string>
+    <string name="members_role">Role</string>
+    <string name="members_change_role">Change role</string>
+    <string name="members_remove">Remove</string>
+    <string name="members_remove_confirm">Remove %1$s from this project?</string>
+    <string name="members_readonly_hint">Only the project owner can manage members.</string>
+    <string name="members_manage">Members</string>
+    <string name="role_owner">Owner</string>
+    <string name="role_operator">Operator</string>
+    <string name="role_reviewer">Reviewer</string>
+    <string name="role_viewer">Viewer</string>
+
+    <!-- Codex 任务融合（工作区内嵌，只读） -->
+    <string name="codex_badge">Codex</string>
+    <string name="codex_hide_details">Hide details</string>
+    <string name="codex_updated">Updated %1$s</string>
+    <string name="codex_queued_header">Queued messages</string>
+    <string name="codex_messages_empty">No recent messages.</string>
+    <string name="codex_goal_line">Goal · %1$s · %2$s</string>
+    <string name="codex_pending">Pending</string>
 </resources>

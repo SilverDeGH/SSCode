@@ -5,12 +5,12 @@ import type { DatabaseSync } from 'node:sqlite';
 import { openDatabase, migrate } from './db/connection.ts';
 import { Repo } from './db/repo.ts';
 import { SecretsStore } from './ai/secrets.ts';
-import { createAdapter } from './ai/openaiCompat.ts';
+import { OpenAiCompatAdapter, createAdapter } from './ai/openaiCompat.ts';
 import type { ModelAdapter } from './types.ts';
 import { SnapshotStore } from './snapshot/snapshot.ts';
 import { snapshotRepoAdapter } from './snapshot/repoAdapter.ts';
 import { TaskEngine } from './engine/engine.ts';
-import { issueAuthToken } from './api/auth.ts';
+import { AuthService, issueAuthToken } from './api/auth.ts';
 import { createApiServer } from './api/server.ts';
 import { fileRoutes } from './features/files.ts';
 import { gitRoutes } from './features/git.ts';
@@ -18,6 +18,9 @@ import { TerminalManager } from './terminal/terminalManager.ts';
 import { terminalRoutes, makeTerminalUpgradeHandler } from './terminal/terminalRoutes.ts';
 import { IdeManager } from './ide/ideManager.ts';
 import { makeIdeRoutes } from './ide/ideRoutes.ts';
+import { CodexWatchManager, codexPathInProject } from './codexwatch/codexWatchManager.ts';
+import { CodexResumeManager } from './codexwatch/codexResumeManager.ts';
+import { makeCodexWatchRoutes } from './codexwatch/codexWatchRoutes.ts';
 
 export const SERVER_VERSION = '0.2.4';
 
@@ -56,6 +59,7 @@ export function createApp(opts: AppOptions): App {
   engine.recoverOnBoot();
 
   const authToken = issueAuthToken(repo);
+  const authService = new AuthService(repo);
   // token 落盘供 App 经 SSH 读文件获取（Windows 无 journalctl；Linux 同样可用此路径）
   try {
     fs.writeFileSync(path.join(opts.dataDir, 'auth-token'), authToken, { mode: 0o600 });
@@ -64,10 +68,25 @@ export function createApp(opts: AppOptions): App {
   }
   const terminalManager = new TerminalManager();
   const ideManager = new IdeManager({ secrets });
+  const codexWatch = new CodexWatchManager({
+    appendEvent: (projectId, type, payload) => {
+      repo.events.append(projectId, null, type, payload);
+    },
+    // 线程 cwd 命中项目路径（含子目录）时事件打该项目 ID；多个项目命中取路径最长者
+    resolveProjectId: (cwd) => {
+      const matches = repo.projects.list().filter(p => codexPathInProject(cwd, p.path));
+      matches.sort((a, b) => b.path.length - a.path.length);
+      return matches[0]?.id ?? null;
+    },
+  });
+  codexWatch.start();
+  // 向 Codex 线程继续发消息的写通道：无定时器，构造即可
+  const codexResume = new CodexResumeManager();
   const server = createApiServer({
     repo,
     engine,
     authToken,
+    authService,
     version: SERVER_VERSION,
     terminalBackend: terminalManager.preferredBackend(),
     setModelKey: (ref, key) => secrets.set(ref, key),
@@ -80,13 +99,24 @@ export function createApp(opts: AppOptions): App {
       ...gitRoutes,
       ...terminalRoutes(terminalManager),
       ...makeIdeRoutes(ideManager),
+      ...makeCodexWatchRoutes(codexWatch),
     ],
+    codexWatch,
+    codexResume,
     upgradeHandler: makeTerminalUpgradeHandler(repo, terminalManager),
     testModel: async configId => {
       const config = repo.modelConfigs.getById(configId);
       if (!config) return { ok: false, detail: '模型配置不存在' };
       try {
         return await createAdapter(config, secrets).test();
+      } catch (err) {
+        return { ok: false, detail: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    // 首次绑定：Key 尚未落库，直接用请求中的 Key 做连接与工具调用验证
+    testModelKey: async ({ baseUrl, model, apiKey }) => {
+      try {
+        return await new OpenAiCompatAdapter({ baseUrl, model, apiKey }).test();
       } catch (err) {
         return { ok: false, detail: err instanceof Error ? err.message : String(err) };
       }

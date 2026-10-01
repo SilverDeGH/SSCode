@@ -259,6 +259,15 @@ ssh-keygen -lf C:\ProgramData\ssh\ssh_host_ed25519_key.pub
 
 Windows 走“本机启动服务 + App 连接已有服务”，无需使用针对 Linux 的环境部署流程。
 
+### 5.1 设备绑定与会话（API Key 登录，多设备共享）
+
+当前源码版本新增设备会话流程（0.2.4 发布包尚未包含，将随后续版本发布）：手机在“绑定模型”页面填写服务商、Base URL、模型 ID 和 API Key 提交绑定；服务器实测验证 Key 的连接与工具调用能力，通过后签发设备会话。此后手机只携带会话凭据，不再依赖静态访问令牌。
+
+- **API Key 只保存在电脑端**：写入本机受保护存储（`%USERPROFILE%\.sscode\secrets.json`），不出现在任何接口响应、日志或事件中；手机上不保存 API Key。
+- **首台绑定设备自动成为所有现有项目的 owner**；之后绑定的设备默认为 viewer（只读），由 owner 在“项目成员”页面提升为 operator/reviewer。
+- **会话自动续期**：access token 15 分钟有效，过期后 App 自动用 refresh token（30 天有效，存 Android Keystore）换新，无需重新输入 Key；设备可在“设备会话”页面退出或被撤销，撤销立即生效。
+- **旧流程继续可用**：经 SSH 自动读取静态令牌的“连接已有服务”方式在迁移窗口内保留；文件、Git、终端和完整 IDE 页面在窗口期内仍走旧令牌。细节见 [部署指南](docs/部署指南.md) 与 [隐私与威胁模型](docs/隐私与威胁模型.md)。
+
 ## 6. 创建项目并使用
 
 ### 6.1 准备一个试用目录
@@ -328,6 +337,7 @@ Windows 原生不能直接运行 code-server。需要在 WSL 内自行安装并�
 | `Access is denied` / 拒绝访问 | 当前 PowerShell 权限不足 | 服务管理或防火墙操作使用管理员窗口 |
 | `EADDRINUSE ... 7823` | 配套服务重复启动或端口被占用 | 先检查健康接口及占用进程，不要反复启动 |
 | AI 测试失败 | 模型调用失败 | 电脑到 API 的网络、Base URL、Key、模型权限及工具调用支持 |
+| App 提示会话过期 / 接口返回 401、403、429 | 设备会话失效、角色不足或触发限流 | 见 [故障排查](docs/故障排查.md)：401 自动刷新后重绑定、403 角色与迁移窗口、429 退避 |
 
 ### 电脑端诊断命令
 
@@ -354,9 +364,10 @@ Tailscale ping 成功只证明虚拟网络可达，仍需检查 SSH 22 端口和
 
 升级时：
 
-1. 等待当前 AI 任务结束，保存文件；配套服务重启会影响任务和 Windows 终端会话。
-2. 手机安装相同包名、相同签名且 versionCode 更高的 APK，可覆盖安装。
-3. 更新电脑上的 `server` 文件并重新启动配套服务，再检查 `/v1/health`。**只更新手机 APK 不会自动替换已运行的 Windows 服务。**
-4. 保留 `%USERPROFILE%\.sscode` 数据目录；不要将模型密钥、SSH 私钥或访问令牌发到公开渠道。
+1. 等待当前 AI 任务结束，保存文件；配套服务重启会影响任务和 Windows 终端会话，各设备的会话 access token 也会失效（App 会自动换新，无需重新绑定）。
+2. 升级服务端前先备份 `%USERPROFILE%\.sscode\sscode.db`；失败回滚步骤见 [部署指南](docs/部署指南.md) 第 4 节。
+3. 手机安装相同包名、相同签名且 versionCode 更高的 APK，可覆盖安装。
+4. 更新电脑上的 `server` 文件并重新启动配套服务，再检查 `/v1/health`。**只更新手机 APK 不会自动替换已运行的 Windows 服务。**
+5. 保留 `%USERPROFILE%\.sscode` 数据目录；不要将模型密钥、SSH 私钥或访问令牌发到公开渠道。
 
-相关文档：[0.2.4 版本说明](docs/0.2.4-release.md)、[Windows 验收记录](docs/验证记录/Windows端到端验收-2026-09-20.md)、[服务端说明](server/README.md)、[Android 构建说明](android/README.md)。
+相关文档：[0.2.4 版本说明](docs/0.2.4-release.md)、[Windows 验收记录](docs/验证记录/Windows端到端验收-2026-09-20.md)、[部署指南](docs/部署指南.md)、[故障排查](docs/故障排查.md)、[服务端说明](server/README.md)、[Android 构建说明](android/README.md)。

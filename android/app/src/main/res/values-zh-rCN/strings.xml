@@ -58,6 +58,11 @@
     <string name="connect">连接</string>
     <string name="edit">编辑</string>
     <string name="delete">删除</string>
+    <string name="project_delete">删除项目</string>
+    <string name="project_delete_confirm_title">删除项目？</string>
+    <string name="project_delete_confirm_message">将删除项目“%1$s”及其全部会话、任务和审批记录；磁盘上的项目文件不会被删除；此操作不可撤销。</string>
+    <string name="project_delete_conflict">项目还有正在运行的任务，请先停止</string>
+    <string name="project_delete_owner_only">只有项目所有者可以删除此项目</string>
     <string name="delete_server_title">删除服务器？</string>
     <string name="delete_server_message">仅删除本机配置与已保存凭据，服务器上的服务与项目数据不受影响。</string>
     <string name="server_line">%1$s@%2$s:%3$d</string>
@@ -144,6 +149,8 @@
     <string name="reject">拒绝</string>
     <string name="approval_reason">原因：%1$s</string>
     <string name="approval_risk">影响：%1$s</string>
+    <string name="approval_requester">发起设备：%1$s</string>
+    <string name="approval_requester_local">本地</string>
     <string name="no_tasks">还没有任务，在下方描述你的第一个任务。</string>
     <string name="session_default_title">默认会话</string>
     <string name="deduplicated_hint">重复请求已合并</string>
@@ -168,6 +175,9 @@
     <string name="chat_new">新对话</string>
     <string name="chat_list">对话列表</string>
     <string name="chat_draft_title">新对话</string>
+    <string name="chat_history">历史对话</string>
+    <string name="chat_history_sessions">对话</string>
+    <string name="chat_history_codex">Codex</string>
     <string name="chat_draft_hint">发送第一条消息即可开始新对话。</string>
     <string name="attach_files">附加文件</string>
     <string name="attach_sheet_title">选择附加文件</string>
@@ -185,4 +195,54 @@
     <string name="open">打开</string>
     <string name="web_browser">浏览器</string>
     <string name="web_tunnel_hint">服务器网页需已启动。保留此预览页即可维持转发，关闭后浏览器地址失效；手机系统终止应用也会断开。</string>
+
+    <!-- 设备绑定 / 会话 -->
+    <string name="bind_title">绑定设备</string>
+    <string name="bind_explanation">用模型 API Key 把本机绑定到服务器。Key 仅验证一次并只保存在服务器上；本机持有的是可撤销的会话。</string>
+    <string name="bind_device_name">设备名称</string>
+    <string name="bind_submit">绑定并进入</string>
+    <string name="bind_failed">绑定失败</string>
+    <string name="bind_rate_limited">尝试次数过多，请稍等几分钟后再试。</string>
+    <string name="bind_key_hint">Key 仅用于本次验证，不会存储在本机。</string>
+    <string name="bind_entry">绑定此设备（API Key）</string>
+    <string name="session_expired">会话已过期，请重新绑定。</string>
+    <string name="session_rebind">重新绑定</string>
+    <string name="no_permission">无权限执行此操作。</string>
+    <string name="workspace_viewer_hint">当前为访客角色，仅可查看任务与消息</string>
+    <string name="workspace_reviewer_hint">审查员角色：可审批请求，无法发起任务</string>
+    <string name="devices_title">设备会话</string>
+    <string name="devices_current">当前设备</string>
+    <string name="devices_revoked">已撤销</string>
+    <string name="devices_last_seen">最近活跃 %1$s</string>
+    <string name="devices_empty">还没有绑定的设备。</string>
+    <string name="devices_sign_out">退出当前设备</string>
+    <string name="devices_sign_out_confirm">将在服务器上撤销本机会话并清除本地凭据，之后需要重新绑定。确定继续？</string>
+    <string name="devices_revoke">撤销</string>
+    <string name="devices_revoke_confirm">确定撤销设备 %1$s？它将立即失去访问权限。</string>
+    <string name="devices_manage">设备管理</string>
+    <string name="time_hours_ago">%1$d 小时前</string>
+    <string name="time_days_ago">%1$d 天前</string>
+    <string name="members_title">项目成员</string>
+    <string name="members_empty">暂无成员。</string>
+    <string name="members_add">添加成员</string>
+    <string name="members_pick_device">选择设备</string>
+    <string name="members_role">角色</string>
+    <string name="members_change_role">修改角色</string>
+    <string name="members_remove">移除</string>
+    <string name="members_remove_confirm">确定把 %1$s 移出本项目？</string>
+    <string name="members_readonly_hint">仅项目所有者可管理成员。</string>
+    <string name="members_manage">成员管理</string>
+    <string name="role_owner">所有者</string>
+    <string name="role_operator">操作员</string>
+    <string name="role_reviewer">审查员</string>
+    <string name="role_viewer">访客</string>
+
+    <!-- Codex 任务融合（工作区内嵌，只读） -->
+    <string name="codex_badge">Codex</string>
+    <string name="codex_hide_details">收起详情</string>
+    <string name="codex_updated">更新于 %1$s</string>
+    <string name="codex_queued_header">排队消息</string>
+    <string name="codex_messages_empty">暂无最近消息。</string>
+    <string name="codex_goal_line">目标 · %1$s · %2$s</string>
+    <string name="codex_pending">待发送</string>
 </resources>

@@ -246,6 +246,27 @@ test('projects: create -> list -> detail -> delete, duplicate path -> 409', asyn
   assert.equal(gone.status, 404);
 });
 
+test('projects: delete refused while tasks active, allowed when terminal', async (t) => {
+  const ctx = await setup(t);
+  const { projectId, sessionId } = makeProjectAndSession(ctx.repo);
+  const task = ctx.repo.tasks.create({
+    projectId,
+    sessionId,
+    input: 'long work',
+    clientRequestId: `cr-${Math.random()}`,
+  });
+  ctx.repo.tasks.updateState(task.id, 'running');
+
+  const busy = await api(ctx, `/v1/projects/${projectId}`, { method: 'DELETE' });
+  assert.equal(busy.status, 409);
+  assert.equal((busy.json.error as { code: string }).code, 'conflict');
+
+  ctx.repo.tasks.updateState(task.id, 'completed');
+  const del = await api(ctx, `/v1/projects/${projectId}`, { method: 'DELETE' });
+  assert.equal(del.status, 200);
+  assert.equal(del.json.deleted, true);
+});
+
 test('tasks: idempotent submit via X-Client-Request-Id, missing header -> 400', async (t) => {
   const ctx = await setup(t);
   const { projectId, sessionId } = makeProjectAndSession(ctx.repo);

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,9 +16,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -48,31 +53,58 @@ import dev.sscode.app.api.ApiException
 import dev.sscode.app.api.ProjectDto
 import kotlinx.coroutines.launch
 
+internal fun roleLabelRes(role: String): Int = when (role) {
+    "owner" -> R.string.role_owner
+    "operator" -> R.string.role_operator
+    "reviewer" -> R.string.role_reviewer
+    "viewer" -> R.string.role_viewer
+    else -> R.string.value_unknown
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectListScreen(
     serverId: Long,
     onBack: () -> Unit,
-    onOpenProject: (projectId: String, projectName: String) -> Unit,
+    onOpenProject: (projectId: String, projectName: String, role: String) -> Unit,
+    onOpenMembers: (projectId: String) -> Unit,
+    onOpenDevices: () -> Unit,
 ) {
     val context = LocalContext.current
     val dao = remember { AppContainer.database(context).serverDao() }
     val credentials = remember { AppContainer.credentials(context) }
     val ssh = remember { AppContainer.ssh(context) }
+    val sessionManager = remember { AppContainer.sessionManager(context, serverId) }
     val scope = rememberCoroutineScope()
 
     var connection by remember { mutableStateOf<ServerConnection?>(null) }
     var projects by remember { mutableStateOf<List<ProjectDto>>(emptyList()) }
+    // projectId -> 本设备角色，来自 me() 的 memberships；旧静态 token 视为 owner
+    var roles by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var loading by remember { mutableStateOf(true) }
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var serverName by remember { mutableStateOf("") }
     var showCreate by remember { mutableStateOf(false) }
+    var deleteTarget by remember { mutableStateOf<ProjectDto?>(null) }
+    var deleting by remember { mutableStateOf(false) }
+    var deleteError by remember { mutableStateOf<String?>(null) }
 
     val missingTokenText = stringResource(R.string.missing_token)
+    val noPermissionText = stringResource(R.string.no_permission)
+    val deleteConflictText = stringResource(R.string.project_delete_conflict)
+    val deleteOwnerOnlyText = stringResource(R.string.project_delete_owner_only)
 
     DisposableEffect(Unit) {
         onDispose { connection?.close() }
+    }
+
+    fun roleOf(project: ProjectDto): String = project.role ?: roles[project.id] ?: "owner"
+
+    suspend fun loadRoles(conn: ServerConnection) {
+        roles = runCatching { conn.api.me() }.getOrNull()
+            ?.memberships?.associate { it.projectId to it.role }
+            ?: emptyMap()
     }
 
     fun refresh() {
@@ -80,14 +112,39 @@ fun ProjectListScreen(
         scope.launch {
             refreshing = true
             try {
+                loadRoles(conn)
                 projects = conn.api.listProjects()
                 error = null
             } catch (e: ApiException) {
-                error = e.message
+                error = if (e.httpStatus == 403) noPermissionText + "\n" + e.message else e.message
             } catch (e: Exception) {
                 error = e.message
             } finally {
                 refreshing = false
+            }
+        }
+    }
+
+    fun deleteProject(project: ProjectDto) {
+        val conn = connection ?: return
+        scope.launch {
+            deleting = true
+            try {
+                conn.api.deleteProject(project.id)
+                deleteTarget = null
+                projects = projects.filterNot { it.id == project.id }
+            } catch (e: ApiException) {
+                deleteTarget = null
+                deleteError = when (e.httpStatus) {
+                    409 -> deleteConflictText
+                    403 -> deleteOwnerOnlyText
+                    else -> e.message
+                }
+            } catch (e: Exception) {
+                deleteTarget = null
+                deleteError = e.message
+            } finally {
+                deleting = false
             }
         }
     }
@@ -97,16 +154,19 @@ fun ProjectListScreen(
         try {
             val entity = dao.getById(serverId) ?: error("server not found")
             serverName = entity.name
-            if (credentials.get(
-                    dev.sscode.app.data.CredentialStore.apiTokenRef(serverId),
-                    dev.sscode.app.data.CredentialStore.KEY_API_TOKEN,
-                ) == null
-            ) {
+            val hasStaticToken = credentials.get(
+                dev.sscode.app.data.CredentialStore.apiTokenRef(serverId),
+                dev.sscode.app.data.CredentialStore.KEY_API_TOKEN,
+            ) != null
+            if (!hasStaticToken && !sessionManager.hasRefreshToken) {
                 error = missingTokenText
                 return@LaunchedEffect
             }
-            connection = connectToApi(ssh, credentials, entity)
+            connection = connectToApi(ssh, credentials, entity, sessionManager)
+            loadRoles(connection!!)
             projects = connection!!.api.listProjects()
+        } catch (e: ApiException) {
+            error = if (e.httpStatus == 403) noPermissionText + "\n" + e.message else e.message
         } catch (e: Exception) {
             error = e.message
         } finally {
@@ -121,6 +181,11 @@ fun ProjectListScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onOpenDevices) {
+                        Icon(Icons.Filled.Devices, contentDescription = stringResource(R.string.devices_manage))
                     }
                 },
             )
@@ -172,24 +237,67 @@ fun ProjectListScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(projects, key = { it.id }) { project ->
+                    val role = roleOf(project)
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onOpenProject(project.id, project.name) },
+                            .clickable { onOpenProject(project.id, project.name, role) },
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(project.name, style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                project.path,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            project.tasks?.let { counts ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(top = 16.dp, bottom = 16.dp)) {
+                                Text(project.name, style = MaterialTheme.typography.titleMedium)
                                 Text(
-                                    stringResource(R.string.project_tasks_summary, counts.running, counts.queued),
+                                    project.path,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.tertiary,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
+                                Text(
+                                    stringResource(roleLabelRes(role)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                                project.tasks?.let { counts ->
+                                    Text(
+                                        stringResource(R.string.project_tasks_summary, counts.running, counts.queued),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                    )
+                                }
+                            }
+                            Box {
+                                var overflow by remember { mutableStateOf(false) }
+                                if (role == "owner") {
+                                    IconButton(onClick = { overflow = true }) {
+                                        Icon(
+                                            Icons.Filled.MoreVert,
+                                            contentDescription = stringResource(R.string.members_manage),
+                                        )
+                                    }
+                                }
+                                DropdownMenu(expanded = overflow, onDismissRequest = { overflow = false }) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.members_manage)) },
+                                        onClick = {
+                                            overflow = false
+                                            onOpenMembers(project.id)
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                stringResource(R.string.project_delete),
+                                                color = MaterialTheme.colorScheme.error,
+                                            )
+                                        },
+                                        onClick = {
+                                            overflow = false
+                                            deleteTarget = project
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -197,6 +305,34 @@ fun ProjectListScreen(
             }
         }
         }
+    }
+
+    deleteTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = { if (!deleting) deleteTarget = null },
+            title = { Text(stringResource(R.string.project_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.project_delete_confirm_message, target.name)) },
+            confirmButton = {
+                TextButton(enabled = !deleting, onClick = { deleteProject(target) }) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }, enabled = !deleting) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+
+    deleteError?.let { message ->
+        AlertDialog(
+            onDismissRequest = { deleteError = null },
+            text = { Text(message) },
+            confirmButton = {
+                TextButton(onClick = { deleteError = null }) { Text(stringResource(R.string.confirm)) }
+            },
+        )
     }
 
     if (showCreate) {
@@ -235,7 +371,7 @@ fun ProjectListScreen(
                             try {
                                 val created = conn.api.createProject(name.trim(), path.trim())
                                 showCreate = false
-                                onOpenProject(created.id, created.name)
+                                onOpenProject(created.id, created.name, "owner")
                             } catch (e: Exception) {
                                 error = e.message
                                 showCreate = false

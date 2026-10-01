@@ -7,6 +7,7 @@
     <string name="terminal_disconnected">Disconnected</string>
     <string name="terminal_backend_limited">Backend %1$s: full-screen interactive programs (vim etc.) are not supported; reconnect replays history while the service is alive, sessions are lost if the service restarts.</string>
     <string name="terminal_reconnect_hint">Connection lost. The session on the server is still alive.</string>
+    <string name="terminal_legacy_token_required">Terminal requires the local admin token (migration-window limitation). Connect with the deployed static token to use it.</string>
     <string name="terminal_reconnect">Reconnect</string>
     <string name="terminal_input_hint">Input...</string>
     <string name="terminal_paste">Paste</string>

@@ -3,6 +3,11 @@
     <string name="legacy_auto_approval">旧服务兼容模式：保持工作区在线即可自动批准。任务完成后更新配套服务，可在离线时继续全接管。</string>
     <string name="runtime_upgrade_required">请先在服务器详情页重新部署配套服务，再使用自动审批或全接管。</string>
     <string name="workspace_reconnecting">连接中断，正在自动重连；服务器任务继续运行</string>
+    <string name="events_connected">已连接</string>
+    <string name="events_reconnecting">正在重连…</string>
+    <string name="time_just_now">刚刚</string>
+    <string name="time_seconds_ago">%1$d 秒前</string>
+    <string name="time_minutes_ago">%1$d 分钟前</string>
     <string name="mode_manual">常规审批</string>
     <string name="mode_auto">自动审批</string>
     <string name="mode_full">全接管</string>

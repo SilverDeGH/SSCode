@@ -204,6 +204,7 @@ export class TaskEngine implements EngineFacade {
       clientRequestId: input.clientRequestId,
       modelConfigId: input.modelConfigId ?? null,
       approvalMode: input.approvalMode ?? 'manual',
+      requesterDeviceId: input.requesterDeviceId ?? null,
     });
     this.#schedule(input.projectId);
     return { task, deduplicated: false };
@@ -571,7 +572,7 @@ export class TaskEngine implements EngineFacade {
     const task = this.#getTask(taskId);
     if (task.state === 'queued') return this.cancelQueued(taskId);
     if (TERMINAL_STATES.includes(task.state)) {
-      throw new RepoError(ERR.INVALID_STATE, `任务已处于终态 ${task.state}，无法停止`);
+      return Promise.resolve(task); // 幂等停止：已终态任务直接返回当前状态（多设备并发停止均成功）
     }
     if (task.state === 'stopping') return Promise.resolve(task);
 
@@ -619,6 +620,7 @@ export class TaskEngine implements EngineFacade {
     if (!['manual', 'auto', 'full'].includes(mode)) throw new RepoError(ERR.VALIDATION, 'Invalid approval mode');
     if (TERMINAL_STATES.includes(task.state)) throw new RepoError(ERR.INVALID_STATE, 'Task already ended');
     this.#repo.tasks.setApprovalMode(taskId, mode);
+    this.#repo.events.append(task.projectId, taskId, 'task.changed', { taskId, approvalMode: mode });
     this.#repo.events.append(task.projectId, taskId, 'task.message', { text: `Approval mode: ${mode}` });
     // Persist first; releasing a waiter can immediately start the next tool.
     if (mode !== 'manual') {
@@ -634,7 +636,14 @@ export class TaskEngine implements EngineFacade {
     if (!TERMINAL_STATES.includes(task.state)) {
       throw new RepoError(ERR.INVALID_STATE, `仅终态任务可撤销，当前状态 ${task.state}`);
     }
-    return Promise.resolve(this.#snapshots.undo(taskId));
+    const report = this.#snapshots.undo(taskId);
+    this.#repo.events.append(task.projectId, taskId, 'task.changed', {
+      taskId,
+      kind: 'undo',
+      hasConflict: report.hasConflict,
+      files: report.results.length,
+    });
+    return Promise.resolve(report);
   }
 
   async resumeInterrupted(taskId: string): Promise<Task> {

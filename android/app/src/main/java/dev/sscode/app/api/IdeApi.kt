@@ -53,8 +53,15 @@ private data class IdeErrorDetail(val code: String = "unknown", val message: Str
 /**
  * /v1/ide 端点封装。baseUrl 可带或不带 /v1 后缀，内部归一化。
  * install 耗时较长，使用独立的长超时 client（读超时 10 分钟）。
+ * 旧静态 token：`IdeApi(baseUrl, token)`；设备会话：传 [session]，逐请求取新 token，401 刷新重试一次。
  */
-class IdeApi(baseUrl: String, private val token: String) {
+class IdeApi(
+    baseUrl: String,
+    private val tokenProvider: () -> String?,
+    session: SessionManager? = null,
+) {
+
+    constructor(baseUrl: String, token: String) : this(baseUrl, { token }, null)
 
     private val root = baseUrl.trimEnd('/').let { if (it.endsWith("/v1")) it else "$it/v1" }
 
@@ -62,12 +69,18 @@ class IdeApi(baseUrl: String, private val token: String) {
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
+        .apply {
+            if (session != null) authenticator(sessionAuthenticator(session))
+        }
         .build()
 
     private val installClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.MINUTES)
         .writeTimeout(30, TimeUnit.SECONDS)
+        .apply {
+            if (session != null) authenticator(sessionAuthenticator(session))
+        }
         .build()
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -93,9 +106,11 @@ class IdeApi(baseUrl: String, private val token: String) {
         }
     }
 
-    private fun builder(path: String): Request.Builder = Request.Builder()
-        .url("$root$path")
-        .header("Authorization", "Bearer $token")
+    private fun builder(path: String): Request.Builder {
+        val b = Request.Builder().url("$root$path")
+        tokenProvider()?.takeIf { it.isNotEmpty() }?.let { b.header("Authorization", "Bearer $it") }
+        return b
+    }
 
     private fun emptyPost(path: String): Request =
         builder(path).post("".toRequestBody(null)).build()

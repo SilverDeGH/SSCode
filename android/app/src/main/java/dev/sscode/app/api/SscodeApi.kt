@@ -34,6 +34,8 @@ data class ProjectDto(
     val isGit: Boolean = false,
     val createdAt: Long = 0,
     val tasks: TaskCountsDto? = null,
+    /** 会话模式下服务端返回本设备在该项目的角色（owner/operator/reviewer/viewer） */
+    val role: String? = null,
 )
 
 @Serializable
@@ -77,6 +79,9 @@ data class ApprovalDto(
     val decidedAt: Long? = null,
     val note: String? = null,
     val createdAt: Long = 0,
+    /** 发起审批的设备；null 表示旧本地管理员 token 提交的审批或迁移前数据 */
+    val requesterDeviceId: String? = null,
+    val requesterDeviceName: String? = null,
 )
 
 @Serializable
@@ -173,10 +178,115 @@ private data class ApprovalModeRequest(val approvalMode: String)
 private data class AppendMessageRequest(val text: String)
 
 @Serializable
+private data class CodexMessageRequest(val text: String)
+
+@Serializable
 data class TaskChangeFileDto(val path: String, val changeKind: String = "")
 
 @Serializable
 data class TaskChangesResponse(val taskId: String = "", val files: List<TaskChangeFileDto> = emptyList())
+
+// ------------------------------------------------------------------ Codex 任务监视 DTO（项目作用域，只读）
+
+@Serializable
+data class CodexTaskProgressDto(
+    val state: String = "idle",
+    val label: String = "",
+    val tone: String = "slate",
+)
+
+@Serializable
+data class CodexTaskGoalDto(
+    val id: String = "",
+    val objective: String = "",
+    val status: CodexTaskProgressDto = CodexTaskProgressDto(),
+    val elapsedSeconds: Long = 0,
+    val elapsed: String = "",
+)
+
+@Serializable
+data class CodexTaskDto(
+    val id: String,
+    val title: String = "",
+    val project: String = "",
+    val projectId: String? = null,
+    val cwd: String = "",
+    val model: String? = null,
+    val pinned: Boolean = false,
+    val queuedCount: Int = 0,
+    val progress: CodexTaskProgressDto = CodexTaskProgressDto(),
+    val activity: String = "",
+    val latestTask: String = "",
+    val latestResult: String = "",
+    val updatedAt: Long = 0,
+    val goal: CodexTaskGoalDto? = null,
+)
+
+@Serializable
+data class CodexTasksResponse(
+    val available: Boolean = false,
+    val tasks: List<CodexTaskDto> = emptyList(),
+)
+
+/** 历史消息与排队消息共用；排队消息额外带 queueOrder / queueRevision。 */
+@Serializable
+data class CodexMessageDto(
+    val id: String = "",
+    val role: String = "user",
+    val text: String = "",
+    val timestamp: Long = 0,
+    val pending: Boolean = false,
+    val queueOrder: Int? = null,
+    val queueRevision: Int? = null,
+)
+
+@Serializable
+data class CodexTaskDetailResponse(
+    val available: Boolean = false,
+    val task: CodexTaskDto? = null,
+    val messages: List<CodexMessageDto> = emptyList(),
+    val queuedTasks: List<CodexMessageDto> = emptyList(),
+)
+
+// ------------------------------------------------------------------ 设备会话 / 成员 DTO
+
+@Serializable
+data class DeviceDto(
+    val id: String,
+    val name: String = "",
+    val createdAt: Long = 0,
+    val lastSeenAt: Long = 0,
+    val revokedAt: Long? = null,
+)
+
+@Serializable
+private data class DevicesResponse(val devices: List<DeviceDto> = emptyList())
+
+@Serializable
+data class MembershipDto(val projectId: String, val role: String = "", val projectName: String? = null)
+
+@Serializable
+data class MeDto(
+    val legacy: Boolean = false,
+    val device: DeviceDto? = null,
+    val sessionId: String? = null,
+    val memberships: List<MembershipDto> = emptyList(),
+)
+
+@Serializable
+data class MemberDto(
+    val projectId: String = "",
+    val deviceId: String,
+    val role: String = "",
+    val createdAt: Long = 0,
+    val deviceName: String? = null,
+)
+
+@Serializable
+private data class MembersResponse(val members: List<MemberDto> = emptyList())
+
+@Serializable
+private data class SetMemberRequest(val deviceId: String, val role: String)
 
 // ------------------------------------------------------------------ 异常
 
@@ -190,13 +300,26 @@ class ApiException(
 
 /**
  * sscode-server REST 客户端。baseUrl 形如 http://127.0.0.1:<本地转发端口>/v1。
+ * 两种认证模式：
+ * - 旧静态 token：`SscodeApi(baseUrl, token)`，行为与之前完全一致；
+ * - 设备会话：传入 [session]，每个请求经 [tokenProvider] 取内存中的 access token，
+ *   收到 401 时由 Authenticator 刷新一次并重试；刷新失败会把会话标记为 EXPIRED。
  */
-class SscodeApi(private val baseUrl: String, private val token: String) {
+class SscodeApi(
+    private val baseUrl: String,
+    private val tokenProvider: () -> String?,
+    session: SessionManager? = null,
+) {
+
+    constructor(baseUrl: String, token: String) : this(baseUrl, { token }, null)
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(100, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
+        .apply {
+            if (session != null) authenticator(sessionAuthenticator(session))
+        }
         .build()
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -222,9 +345,11 @@ class SscodeApi(private val baseUrl: String, private val token: String) {
         }
     }
 
-    private fun builder(path: String): Request.Builder = Request.Builder()
-        .url("$baseUrl$path")
-        .header("Authorization", "Bearer $token")
+    private fun builder(path: String): Request.Builder {
+        val b = Request.Builder().url("$baseUrl$path")
+        tokenProvider()?.takeIf { it.isNotEmpty() }?.let { b.header("Authorization", "Bearer $it") }
+        return b
+    }
 
     suspend fun health(): HealthDto = withContext(Dispatchers.IO) {
         execute(Request.Builder().url("$baseUrl/health").get().build())
@@ -237,6 +362,11 @@ class SscodeApi(private val baseUrl: String, private val token: String) {
     suspend fun createProject(name: String, path: String): ProjectDto = withContext(Dispatchers.IO) {
         val body = json.encodeToString(CreateProjectRequest.serializer(), CreateProjectRequest(name, path))
         execute(builder("/projects").post(body.toRequestBody(jsonMediaType)).build())
+    }
+
+    suspend fun deleteProject(projectId: String): Unit = withContext(Dispatchers.IO) {
+        execute<JsonObject>(builder("/projects/$projectId").delete().build())
+        Unit
     }
 
     suspend fun listSessions(projectId: String): List<SessionDto> = withContext(Dispatchers.IO) {
@@ -334,7 +464,67 @@ class SscodeApi(private val baseUrl: String, private val token: String) {
         execute(builder(query).get().build())
     }
 
+    // ------------------------------------------------------------------ Codex 任务监视（项目作用域，只读）
+
+    /** 本机 Codex Desktop/CLI 中 cwd 落在项目路径内的线程；available=false 表示宿主无 Codex 数据。 */
+    suspend fun listCodexTasks(projectId: String): CodexTasksResponse = withContext(Dispatchers.IO) {
+        execute(builder("/projects/$projectId/codex/tasks").get().build())
+    }
+
+    /** 线程不存在或不属于该项目时抛 [ApiException]（httpStatus = 404）。 */
+    suspend fun getCodexTask(projectId: String, threadId: String): CodexTaskDetailResponse = withContext(Dispatchers.IO) {
+        execute(builder("/projects/$projectId/codex/tasks/$threadId").get().build())
+    }
+
+    /** 向 Codex 线程追加用户消息；服务端返回 202（Accepted），响应体可能为空，忽略解码失败。 */
+    suspend fun sendCodexMessage(projectId: String, threadId: String, text: String): Unit = withContext(Dispatchers.IO) {
+        val body = json.encodeToString(CodexMessageRequest.serializer(), CodexMessageRequest(text))
+        try {
+            execute<JsonObject>(builder("/projects/$projectId/codex/tasks/$threadId/messages").post(body.toRequestBody(jsonMediaType)).build())
+        } catch (e: ApiException) {
+            throw e
+        } catch (_: Exception) {
+            // 202 空响应体无法解码，视为成功
+        }
+        Unit
+    }
+
     suspend fun getPresets(): List<PresetDto> = withContext(Dispatchers.IO) {
         execute<PresetsResponse>(builder("/models/presets").get().build()).presets
+    }
+
+    // ------------------------------------------------------------------ 设备会话 / 成员
+
+    suspend fun me(): MeDto = withContext(Dispatchers.IO) {
+        execute(builder("/auth/me").get().build())
+    }
+
+    suspend fun listDevices(): List<DeviceDto> = withContext(Dispatchers.IO) {
+        execute<DevicesResponse>(builder("/auth/devices").get().build()).devices
+    }
+
+    /** 退出当前设备：服务端要求会话 access token（撤销本会话），本地凭据由调用方清理。 */
+    suspend fun revokeSession(): Unit = withContext(Dispatchers.IO) {
+        execute<kotlinx.serialization.json.JsonObject>(builder("/auth/revoke").post("".toRequestBody(null)).build())
+        Unit
+    }
+
+    suspend fun revokeDevice(deviceId: String): Unit = withContext(Dispatchers.IO) {
+        execute<kotlinx.serialization.json.JsonObject>(builder("/auth/devices/$deviceId").delete().build())
+        Unit
+    }
+
+    suspend fun listMembers(projectId: String): List<MemberDto> = withContext(Dispatchers.IO) {
+        execute<MembersResponse>(builder("/projects/$projectId/members").get().build()).members
+    }
+
+    suspend fun setMember(projectId: String, deviceId: String, role: String): MemberDto = withContext(Dispatchers.IO) {
+        val body = json.encodeToString(SetMemberRequest.serializer(), SetMemberRequest(deviceId, role))
+        execute(builder("/projects/$projectId/members").post(body.toRequestBody(jsonMediaType)).build())
+    }
+
+    suspend fun removeMember(projectId: String, deviceId: String): Unit = withContext(Dispatchers.IO) {
+        execute<kotlinx.serialization.json.JsonObject>(builder("/projects/$projectId/members/$deviceId").delete().build())
+        Unit
     }
 }

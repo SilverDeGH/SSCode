@@ -7,6 +7,7 @@
     <string name="terminal_disconnected">已断开</string>
     <string name="terminal_backend_limited">后端 %1$s：不支持 vim 等全屏交互程序；服务进程存活期间重连可回放历史，服务重启后会话丢失。</string>
     <string name="terminal_reconnect_hint">连接已断开，服务器上的会话仍然保留。</string>
+    <string name="terminal_legacy_token_required">终端需要本地管理员令牌（迁移窗口限制）。请改用部署的静态令牌连接后使用。</string>
     <string name="terminal_reconnect">重连</string>
     <string name="terminal_input_hint">输入...</string>
     <string name="terminal_paste">粘贴</string>

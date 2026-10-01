@@ -59,6 +59,7 @@ import dev.sscode.app.api.ApiException
 import dev.sscode.app.api.GitApi
 import dev.sscode.app.api.GitFileDto
 import dev.sscode.app.api.GitStatusDto
+import dev.sscode.app.api.SessionRegistry
 import kotlinx.coroutines.launch
 
 private val GIT_BADGE_MODIFIED = Color(0xFFE2A336)
@@ -103,7 +104,12 @@ fun GitScreen(
     onOpenIde: () -> Unit,
 ) {
     val context = LocalContext.current
-    val api = remember { GitApi(baseUrl, token) }
+    // 会话模式：按隧道 origin 找回 SessionManager，逐请求取最新 access token（含 401 刷新重试）
+    val session = remember(baseUrl) { SessionRegistry.forUrl(baseUrl) }
+    val api = remember(session) {
+        if (session != null) GitApi(baseUrl, { session.accessTokenBlocking() }, session)
+        else GitApi(baseUrl, token)
+    }
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
 

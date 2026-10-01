@@ -3,6 +3,11 @@
     <string name="legacy_auto_approval">Legacy server: keep this workspace online for automatic approvals. Update the companion service after this task for offline full control.</string>
     <string name="runtime_upgrade_required">Update the companion service from the server screen before using approval modes.</string>
     <string name="workspace_reconnecting">Disconnected. Reconnecting; server tasks keep running.</string>
+    <string name="events_connected">Connected</string>
+    <string name="events_reconnecting">Reconnecting…</string>
+    <string name="time_just_now">just now</string>
+    <string name="time_seconds_ago">%1$ds ago</string>
+    <string name="time_minutes_ago">%1$d min ago</string>
     <string name="mode_manual">Standard</string>
     <string name="mode_auto">Auto approval</string>
     <string name="mode_full">Full control</string>

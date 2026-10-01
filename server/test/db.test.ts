@@ -43,11 +43,11 @@ function makeTask(repo: Repo, clientRequestId = `cr-${Math.random()}`): {
   return { project, session, task };
 }
 
-test('migration: fresh db reaches schema_version 2 and re-migration is a no-op', () => {
+test('migration: fresh db reaches schema_version 4 and re-migration is a no-op', () => {
   const { db, repo } = setup();
-  assert.equal(repo.kv.get('schema_version'), '2');
+  assert.equal(repo.kv.get('schema_version'), '4');
   migrate(db);
-  assert.equal(repo.kv.get('schema_version'), '2');
+  assert.equal(repo.kv.get('schema_version'), '4');
   const tables = db
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'tasks'")
     .all();
@@ -163,6 +163,8 @@ test('approvals: decide is idempotent and syncs tool_call state', () => {
 test('events: cursor-based listAfter with limit and project filter', () => {
   const { repo } = setup();
   const { project } = makeTask(repo);
+  // tasks.create 现在会发出 task.created 事件；以它为游标基线
+  const base = repo.events.listAfter(0, project.id).at(-1)?.id ?? 0;
   const other = repo.projects.create({ name: 'other', path: '/p/other', isGit: false });
 
   const ids: number[] = [];
@@ -172,7 +174,7 @@ test('events: cursor-based listAfter with limit and project filter', () => {
   repo.events.append(other.id, null, 'log', { i: 99 });
   repo.events.append(null, null, 'log', { i: 100 });
 
-  const page1 = repo.events.listAfter(0, project.id, 2);
+  const page1 = repo.events.listAfter(base, project.id, 2);
   assert.equal(page1.length, 2);
   assert.deepEqual(
     page1.map((e) => e.id),
@@ -192,7 +194,7 @@ test('events: cursor-based listAfter with limit and project filter', () => {
   );
 
   const all = repo.events.listAfter(0);
-  assert.equal(all.length, 7);
+  assert.equal(all.length, 8);
   for (let i = 1; i < all.length; i++) {
     assert.ok(all[i]!.id > all[i - 1]!.id);
   }
@@ -304,4 +306,40 @@ test('idempotency + kv basics; project delete cascades', () => {
   assert.equal(repo.toolCalls.getById(toolCall.id), null);
   assert.equal(repo.snapshots.getByTask(task.id), null);
   assert.equal(repo.events.listAfter(0, project.id).length, 0);
+});
+
+test('migration to v4: tasks/approvals 数据保留，新增发起设备列默认 null', () => {
+  const db = openDatabase(':memory:');
+  // 手工构建 v3 库：依次应用 v1 建表、v2 approval_mode、v3 设备/会话表
+  db.exec(MIGRATIONS[1]!);
+  db.prepare("INSERT INTO kv_meta VALUES ('schema_version', '1')").run();
+  db.exec(MIGRATIONS[2]!);
+  db.exec(MIGRATIONS[3]!);
+  db.prepare("UPDATE kv_meta SET value = '3' WHERE key = 'schema_version'").run();
+  db.prepare("INSERT INTO projects VALUES ('p', 'demo', '/demo', 0, 1)").run();
+  db.prepare("INSERT INTO sessions VALUES ('s', 'p', '测试会话', 1)").run();
+  db.prepare(
+    "INSERT INTO tasks (id, project_id, session_id, seq, state, input, summary, model_config_id, client_request_id, created_at, started_at, ended_at, approval_mode) " +
+      "VALUES ('t', 'p', 's', 1, 'queued', '原始需求', NULL, NULL, 'r', 1, NULL, NULL, 'manual')",
+  ).run();
+  db.prepare(
+    "INSERT INTO tool_calls (id, task_id, seq, tool, args, state, result, approval_id, created_at, ended_at) " +
+      "VALUES ('tc', 't', 1, 'write_file', '{}', 'pending', NULL, NULL, 1, NULL)",
+  ).run();
+  db.prepare(
+    "INSERT INTO approvals (id, task_id, tool_call_id, operation, params, reason, risk_summary, state, decided_at, note, created_at) " +
+      "VALUES ('a', 't', 'tc', 'write a.ts', '{}', 'r', 'low', 'pending', NULL, NULL, 1)",
+  ).run();
+
+  migrate(db);
+
+  const repo = new Repo(db);
+  assert.equal(repo.kv.get('schema_version'), '4');
+  const task = repo.tasks.getById('t');
+  assert.equal(task?.input, '原始需求', '迁移后任务数据保留');
+  assert.equal(task?.createdByDeviceId, null, '迁移前任务的发起设备为 null');
+  const approval = repo.approvals.getById('a');
+  assert.equal(approval?.operation, 'write a.ts', '迁移后审批数据保留');
+  assert.equal(approval?.requesterDeviceId, null, '迁移前审批的发起设备为 null');
+  db.close();
 });

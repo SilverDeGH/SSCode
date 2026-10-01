@@ -1,4 +1,4 @@
-﻿package dev.sscode.app.ui
+package dev.sscode.app.ui
 
 import android.annotation.SuppressLint
 import android.webkit.WebResourceRequest
@@ -56,6 +56,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import dev.sscode.app.R
 import dev.sscode.app.api.IdeAccessDto
 import dev.sscode.app.api.IdeApi
+import dev.sscode.app.api.SessionRegistry
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 
@@ -70,7 +71,12 @@ fun IdeScreen(
     ideLocalPort: Int,
     onBack: () -> Unit,
 ) {
-    val api = remember { IdeApi(baseUrl, token) }
+    // 会话模式：按隧道 origin 找回 SessionManager，逐请求取最新 access token（含 401 刷新重试）
+    val session = remember(baseUrl) { SessionRegistry.forUrl(baseUrl) }
+    val api = remember(session) {
+        if (session != null) IdeApi(baseUrl, { session.accessTokenBlocking() }, session)
+        else IdeApi(baseUrl, token)
+    }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
